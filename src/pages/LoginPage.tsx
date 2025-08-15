@@ -1,9 +1,9 @@
-import type React from "react";
-import { useState } from "react";
+// src/pages/LoginPage.tsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CryptoJS from "crypto-js";
-import logo from "../assets/logo2.png";
-import logo1 from "../assets/logo.png"; // Assuming you have a logo1.png in the assets folder
+import { useAuth } from "../context/AuthProvider";
+import logo from "../assets/logo.png";
+import logo1 from "../assets/logo2.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,9 +12,11 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
-  const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const navigate = useNavigate();
+
+  // Use auth context
+  const { login, isLoading } = useAuth();
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -35,115 +37,36 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Fungsi untuk encrypt password dengan SHA-256
-  const encryptPassword = (password: string): string => {
-    return CryptoJS.SHA256(password).toString(CryptoJS.enc.Hex);
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setApiError("");
 
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    const result = await login(email, password);
 
-    try {
-      // Encrypt password dengan SHA-256
-      const encryptedPassword = encryptPassword(password.trim());
-
-      const loginData = {
-        email: email.trim(),
-        password: encryptedPassword,
-      };
-
-      console.log("Sending login data:", loginData);
-      console.log(
-        "Login URL:",
-        "https://api-test.bullionecosystem.com/api/v1/auth/login"
-      );
-
-      const response = await fetch(
-        "https://api-test.bullionecosystem.com/api/v1/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(loginData),
-        }
-      );
-
-      const data = await response.json();
-      console.log("API Response:", data);
-      console.log("Response status:", response.status);
-      console.log("Response OK:", response.ok);
-      console.log("Data structure:", Object.keys(data));
-      console.log(
-        "Data.data structure:",
-        data.data ? Object.keys(data.data) : "No data object"
-      );
-
-      // Cek jika login berhasil (tidak ada iserror atau err_code)
-      if (response.ok && !data.iserror && !data.err_code) {
-        // Store the authentication token from data.data.token
-        localStorage.setItem("token", data.data.token); // Gunakan "token" sebagai key
-        localStorage.setItem("authToken", data.data.token); // Simpan juga dengan key "authToken" untuk kompatibilitas
-
-        // Simpan informasi user jika ada
-        if (data.data.user) {
-          localStorage.setItem(
-            "userName",
-            data.data.user.name || data.data.name || ""
-          );
-          localStorage.setItem(
-            "userEmail",
-            data.data.user.email || data.data.email || ""
-          );
-        } else if (data.data.name) {
-          localStorage.setItem("userName", data.data.name);
-          localStorage.setItem("userEmail", data.data.email || "");
-        }
-
-        console.log("Login berhasil, navigasi ke dashboard");
-        // Redirect to dashboard after successful login
-        navigate("/dashboard");
-      } else {
-        // Handle login errors - tampilkan pesan error dari API
-        const errorMessage =
-          data.err_message ||
-          data.err_message_en ||
-          data.message ||
-          "Login failed. Please check your credentials.";
-        setApiError(errorMessage);
-        console.error("Login failed:", data);
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setApiError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      // Navigate is handled by the AppRoutes component
+    } else {
+      setApiError(result.error);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Bagian Kiri - Gambar/Background */}
-      <div className="lg:flex-1 bg-orange-600 relative order-2 lg:order-1">
-        <div className="absolute inset-0"></div>
-
+    <div className="h-screen flex">
+      {/* Left side - Hero section */}
+      <div className="flex-1 bg-gradient-to-br bg-orange-600 relative overflow-hidden">
         {/* Konten Branding - ditampilkan di mobile juga */}
         <div className="relative z-10 p-6 sm:p-12 flex flex-col justify-center items-center lg:items-start lg:justify-start h-full">
           <div className="text-white text-center lg:text-left">
             <div className="mb-4">
               <img
-                src={logo}
+                src={logo1}
                 alt="Logo"
                 className="h-12 w-auto mx-auto lg:mx-0"
               />
               <img
-                src={logo1}
+                src={logo}
                 alt="Logo 1"
                 className="absolute bottom-56 right-56 opacity-20 "
               />
@@ -152,7 +75,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Bagian Kanan - Form Login */}
+      {/* Right side - Login form */}
       <div className="flex-auto bg-white flex items-start justify-center p-6 sm:p-8 order-1 lg:order-2">
         <div className="w-full max-w-md mx-auto py-7">
           <div className="text-center mb-6 sm:mb-8">
@@ -164,8 +87,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
-            {/* [Form fields tetap sama, hanya menyesuaikan spacing untuk mobile] */}
+          <form onSubmit={handleLogin} className="space-y-6">
             {apiError && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
                 {apiError}
@@ -185,14 +107,12 @@ export default function LoginPage() {
                 placeholder="Masukkan email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full h-10 sm:h-12 px-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                className={`w-full h-12 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
               />
               {errors.email && (
-                <p className="text-xs sm:text-sm text-red-500">
-                  {errors.email}
-                </p>
+                <p className="text-sm text-red-500">{errors.email}</p>
               )}
             </div>
 
@@ -210,18 +130,18 @@ export default function LoginPage() {
                   placeholder="Masukkan password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full h-10 sm:h-12 px-3 pr-10 sm:pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                  className={`w-full h-12 px-4 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   {showPassword ? (
                     <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -235,7 +155,7 @@ export default function LoginPage() {
                     </svg>
                   ) : (
                     <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -257,27 +177,32 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs sm:text-sm text-red-500">
-                  {errors.password}
-                </p>
+                <p className="text-sm text-red-500">{errors.password}</p>
               )}
             </div>
 
             <button
               type="submit"
-              className="w-full h-10 sm:h-12 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               disabled={isLoading}
             >
-              {isLoading ? "Loading..." : "Masuk"}
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Loading...
+                </>
+              ) : (
+                "Masuk"
+              )}
             </button>
           </form>
 
-          <div className="text-center mt-4 sm:mt-6">
-            <p className="text-xs sm:text-sm text-gray-600">
+          <div className="text-center mt-6">
+            <p className="text-gray-600">
               Belum punya akun?{" "}
               <button
                 onClick={() => navigate("/register")}
-                className="text-orange-500 hover:text-orange-600 font-medium"
+                className="text-orange-500 hover:text-orange-600 font-medium transition-colors"
               >
                 Daftar di sini
               </button>

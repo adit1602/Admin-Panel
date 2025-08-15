@@ -1,6 +1,7 @@
 import type React from "react";
 import { use, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Upload } from "lucide-react";
+import logo from "../assets/logo.png";
+import logo1 from "../assets/logo2.png";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -32,9 +35,9 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const navigate = useNavigate();
+  const { register, isLoading } = useAuth();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -80,14 +83,7 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const hashPassword = async (password: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  };
+  // Password hashing is now handled by authService
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -112,86 +108,60 @@ export default function RegisterPage() {
 
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    // Convert date to ISO string format
+    const isoDate = new Date(formData.dateOfBirth).toISOString();
 
-    try {
-      const hashedPassword = await hashPassword(formData.password);
+    // Prepare registration data
+    const registrationData = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      gender: formData.gender,
+      dateOfBirth: isoDate,
+      email: formData.email,
+      phoneNumber: formData.phoneNumber,
+      address: formData.address,
+      password: formData.password,
+      profilePhoto: profilePhoto,
+    };
 
-      // Convert date to ISO string format
-      const isoDate = new Date(formData.dateOfBirth).toISOString();
+    // Call register from AuthContext
+    const result = await register(registrationData);
 
-      const formDataToSend = new FormData();
-      formDataToSend.append("first_name", formData.firstName);
-      formDataToSend.append("last_name", formData.lastName);
-      formDataToSend.append("gender", formData.gender);
-      formDataToSend.append("date_of_birth", isoDate);
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("phone", formData.phoneNumber);
-      formDataToSend.append("address", formData.address);
-      formDataToSend.append("password", hashedPassword);
-
-      if (profilePhoto) {
-        formDataToSend.append("photo", profilePhoto);
-      }
-
-      // Debug: Log form data
-      console.log("Form data being sent:");
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value);
-      }
-
-      const response = await fetch(
-        "https://api-test.bullionecosystem.com/api/v1/auth/register",
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-          },
-          body: formDataToSend,
-        }
-      );
-
-      console.log("Response status:", response.status);
-
-      const data = await response.json();
-      console.log("API Response:", data);
-
-      if (response.ok && !data.iserror) {
-        // Registration successful
-        navigate("/login?registered=true");
-      } else {
-        // Handle registration errors
-        const errorMessage =
-          data.err_message ||
-          data.err_message_en ||
-          data.message ||
-          "Registration failed. Please try again.";
-        setApiError(errorMessage);
-        console.error("Registration failed:", data);
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      setApiError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      // Registration successful
+      navigate("/login?registered=true");
+    } else {
+      // Handle registration error
+      setApiError(result.error);
     }
   };
 
   return (
     <div className="min-h-screen flex">
-      <div className="flex-1 bg-gradient-to-br from-blue-400 to-blue-500 relative overflow-hidden">
-        <div className="absolute inset-0">
-          {/* Decorative circles */}
+      <div className="flex-1 bg-gradient-to-br bg-blue-600 relative overflow-hidden">
+        {/* <div className="absolute inset-0">
+          Decorative circles
           <div className="absolute top-20 left-20 w-32 h-32 border-2 border-white/20 rounded-full"></div>
           <div className="absolute top-40 left-40 w-24 h-24 border-2 border-white/20 rounded-full"></div>
           <div className="absolute bottom-32 right-32 w-40 h-40 border-2 border-white/20 rounded-full"></div>
           <div className="absolute bottom-20 right-20 w-20 h-20 border-2 border-white/20 rounded-full"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-white/10 rounded-full"></div>
-        </div>
-        <div className="relative z-10 p-12">
-          <div className="text-white">
-            <h1 className="text-4xl font-bold mb-2">BULLION</h1>
-            <div className="w-16 h-1 bg-white mb-4"></div>
+        </div> */}
+        {/* Konten Branding - ditampilkan di mobile juga */}
+        <div className="relative z-10 p-6 sm:p-12 flex flex-col justify-center items-center lg:items-start lg:justify-start h-full">
+          <div className="text-white text-center lg:text-left">
+            <div className="mb-4">
+              <img
+                src={logo1}
+                alt="Logo"
+                className="h-12 w-auto mx-auto lg:mx-0"
+              />
+              <img
+                src={logo}
+                alt="Logo 1"
+                className="absolute bottom-56 right-56 opacity-20 "
+              />
+            </div>
           </div>
         </div>
       </div>
