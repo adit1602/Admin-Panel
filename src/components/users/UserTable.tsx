@@ -1,4 +1,3 @@
-// src/components/users/UserTable.tsx
 import type { AdminUser } from "../../types";
 import { formatDate } from "../../lib/utils";
 import eyeIcon from "../../assets/mata.svg";
@@ -17,12 +16,12 @@ export function UserTable({
   onView,
   onEdit,
 }: UserTableProps) {
-  const handleEditClick = (e: React.MouseEvent, user: AdminUser) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Edit button clicked for:", user.name);
-    onEdit(user);
-  };
+  //   const handleEditClick = (e: React.MouseEvent, user: AdminUser) => {
+  //     e.preventDefault();
+  //     e.stopPropagation();
+  //     console.log("Edit button clicked for:", user.name);
+  //     onEdit(user);
+  //   };
 
   return (
     <table className="w-full border-collapse">

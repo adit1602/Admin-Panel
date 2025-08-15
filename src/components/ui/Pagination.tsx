@@ -1,5 +1,4 @@
 // src/components/ui/Pagination.tsx
-import React from "react";
 
 interface PaginationProps {
   currentPage: number;

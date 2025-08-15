@@ -11,14 +11,14 @@ import DashboardPage from "./pages/DashboardPage";
 import { AuthProvider, useAuth } from "./context/AuthProvider";
 
 // Protected route component
-function ProtectedRoute({ children }: { children: JSX.Element }) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 // App Routes Component
