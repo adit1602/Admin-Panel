@@ -31,9 +31,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
-    "@testing-library/jest-dom": "^6.7.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^14.4.3",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^24.2.1",
     "@types/react": "^19.1.10",
